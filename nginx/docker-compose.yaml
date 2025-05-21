@@ -1,0 +1,52 @@
+services:
+  node:
+    build:
+      context: node
+    image: fullcycle-node
+    container_name: fullcycle-node
+    entrypoint: bash -c "npm install && dockerize -wait tcp://fullcycle-mysql:3306 -timeout 10s node index.js"
+    depends_on:
+      - database
+    networks:
+      - default-net
+    volumes:
+      - ./node:/usr/src/app
+    ports:
+      - 5000:5000
+    tty: true
+
+  nginx:
+    build: 
+      context: nginx
+    image: fullcycle-nginx
+    container_name: fullcycle-nginx
+    depends_on:
+      - node
+    networks:
+      - default-net
+    ports:
+      - 8080:80
+    tty: true
+
+  database:
+    image: mysql:5.7.44
+    container_name: fullcycle-mysql
+    restart: always
+    command: --innodb-use-native-aio=0 --default-authentication-plugin=mysql_native_password
+    tty: true
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysql/initdb:/docker-entrypoint-initdb.d
+#      - ./mysql/data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_USER=nodeuser
+      - MYSQL_PASSWORD=nodepwd
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - default-net
+
+networks:
+  default-net:
+    driver: bridge
