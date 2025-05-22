@@ -1,12 +1,17 @@
-FROM golang:1.19.2-bullseye
+FROM golang:1.20-alpine3.18 as builder
 
 WORKDIR /app
 
 COPY main.go .
 
-RUN go mod init fullcycle
-RUN go mod download
+RUN CGO_ENABLED=0 go build -o /main main.go
 
-RUN go build -o main .
+FROM scratch
 
-CMD ["./main"]
+WORKDIR /
+
+COPY --from=builder /main /main
+
+EXPOSE 8080
+
+ENTRYPOINT ["/main"]
